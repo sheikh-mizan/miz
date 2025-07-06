@@ -8,20 +8,26 @@ const ImageGalleryApp = {
     dynamicTitle: null,
     dialogOverlay: null,
     closeButton: null,
+    dialogImage: null,
 
     createRandomImage(width = 800, height = 400) {
-        const img = new Image(width, height);
+        const img = new Image();
         img.src = `https://picsum.photos/${width}/${height}?random=${Math.floor(
             Math.random() * 1000
         )}`;
         img.loading = "lazy";
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
         return img;
     },
 
     appendRandomImages() {
-        this.imageItems.forEach((item) =>
-            item.appendChild(this.createRandomImage())
-        );
+        this.imageItems.forEach((item) => {
+            if (!item.querySelector('img')) {
+                item.appendChild(this.createRandomImage());
+            }
+        });
     },
 
     displayCollection(collectionID) {
@@ -29,15 +35,25 @@ const ImageGalleryApp = {
             collection.dataset.hidden =
                 collection.id === collectionID ? "false" : "true";
         });
+        
+        // Update go back button visibility
+        if (collectionID === "collection1") {
+            this.goBackButton.style.visibility = 'hidden';
+        } else {
+            this.goBackButton.style.visibility = 'visible';
+        }
     },
 
     showDialog(image) {
-        this.dialogOverlay.replaceChildren(image, this.closeButton);
+        const dialogImg = this.dialogOverlay.querySelector('.dialog-image');
+        dialogImg.src = image.src;
         this.dialogOverlay.classList.add("open");
+        document.body.style.overflow = 'hidden';
     },
 
     closeDialog() {
         this.dialogOverlay.classList.remove("open");
+        document.body.style.overflow = '';
     },
 
     setInitialAppState() {
@@ -47,12 +63,13 @@ const ImageGalleryApp = {
             this.activateNavigationButton(firstNavButton);
             this.displayCollection(initialCollectionID);
             this.updateDynamicTitle(firstNavButton);
+            this.goBackButton.style.visibility = 'hidden';
         }
     },
 
     updateDynamicTitle(button) {
-        const label = button.nextElementSibling?.textContent || "";
-        this.dynamicTitle.textContent = label ? `${label}'s collection` : "";
+        const label = button.parentElement.querySelector('.label')?.textContent || "";
+        this.dynamicTitle.textContent = label ? `${label}'s collection` : "Gallery";
     },
 
     attachEventListeners() {
@@ -60,14 +77,23 @@ const ImageGalleryApp = {
             "click",
             this.handleNavigationClick.bind(this)
         );
+        
         this.imageGalleryContainer.addEventListener(
             "click",
             this.handleImageItemClick.bind(this)
         );
-        this.closeButton.addEventListener("click", this.closeDialog.bind(this));
+        
+        this.dialogOverlay.querySelector('.close-btn').addEventListener(
+            "click",
+            this.closeDialog.bind(this)
+        );
+        
         this.goBackButton.addEventListener(
             "click",
-            this.setInitialAppState.bind(this)
+            () => {
+                this.buttons[0].click();
+                this.setInitialAppState();
+            }
         );
     },
 
@@ -85,10 +111,10 @@ const ImageGalleryApp = {
         const clickedImageItem = event.target.closest(".image-item");
         if (!clickedImageItem) return;
 
-        const clonedImage = clickedImageItem
-            .querySelector("img")
-            .cloneNode(true);
-        this.showDialog(clonedImage);
+        const image = clickedImageItem.querySelector("img");
+        if (image) {
+            this.showDialog(image);
+        }
     },
 
     activateNavigationButton(button) {
@@ -109,7 +135,6 @@ const ImageGalleryApp = {
         this.goBackButton = document.querySelector(".button--go-back");
         this.dynamicTitle = document.querySelector(".dynamic-title");
         this.dialogOverlay = document.querySelector(".dialog");
-        this.closeButton = document.querySelector(".close-btn");
 
         this.attachEventListeners();
         this.appendRandomImages();
@@ -117,6 +142,6 @@ const ImageGalleryApp = {
     }
 };
 
-document.addEventListener("DOMContentLoaded", () =>
-    ImageGalleryApp.initialize()
-);
+document.addEventListener("DOMContentLoaded", () => {
+    ImageGalleryApp.initialize();
+});
