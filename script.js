@@ -1,147 +1,66 @@
-const ImageGalleryApp = {
-    menu: null,
-    buttons: [],
-    imageGalleryContainer: null,
-    imageItems: [],
-    galleryCollections: [],
-    goBackButton: null,
-    dynamicTitle: null,
-    dialogOverlay: null,
-    closeButton: null,
-    dialogImage: null,
+document.addEventListener('DOMContentLoaded', () => {
+    // Elements
+    const navButtons = document.querySelectorAll('.nav-button');
+    const collections = document.querySelectorAll('.image__gallery-collection');
+    const goBackBtn = document.querySelector('.button--go-back');
+    const title = document.querySelector('.dynamic-title');
+    const dialog = document.querySelector('.dialog');
+    const closeBtn = document.querySelector('.close-btn');
+    const dialogImg = document.querySelector('.dialog-img');
+    const imageItems = document.querySelectorAll('.image-item');
 
-    createRandomImage(width = 800, height = 400) {
-        const img = new Image();
-        img.src = `https://picsum.photos/${width}/${height}?random=${Math.floor(
-            Math.random() * 1000
-        )}`;
-        img.loading = "lazy";
+    // Load random images
+    imageItems.forEach(item => {
+        const img = document.createElement('img');
+        img.src = `https://picsum.photos/300/300?random=${Math.random()}`;
+        img.loading = 'lazy';
         img.style.width = '100%';
         img.style.height = '100%';
         img.style.objectFit = 'cover';
-        return img;
-    },
+        item.appendChild(img);
+    });
 
-    appendRandomImages() {
-        this.imageItems.forEach((item) => {
-            if (!item.querySelector('img')) {
-                item.appendChild(this.createRandomImage());
-            }
+    // Navigation click
+    navButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Update active button
+            navButtons.forEach(b => b.setAttribute('aria-selected', 'false'));
+            btn.setAttribute('aria-selected', 'true');
+            
+            // Show correct collection
+            const target = btn.dataset.target;
+            collections.forEach(col => {
+                col.dataset.hidden = col.id === target ? 'false' : 'true';
+            });
+            
+            // Update title
+            const label = btn.parentElement.querySelector('.label').textContent;
+            title.textContent = `${label}'s Collection`;
+            
+            // Show/hide back button
+            goBackBtn.style.visibility = target === 'collection1' ? 'hidden' : 'visible';
         });
-    },
+    });
 
-    displayCollection(collectionID) {
-        this.galleryCollections.forEach((collection) => {
-            collection.dataset.hidden =
-                collection.id === collectionID ? "false" : "true";
-        });
-        
-        // Update go back button visibility
-        if (collectionID === "collection1") {
-            this.goBackButton.style.visibility = 'hidden';
-        } else {
-            this.goBackButton.style.visibility = 'visible';
+    // Image click
+    document.querySelector('.image-gallery').addEventListener('click', (e) => {
+        const img = e.target.closest('.image-item img');
+        if (img) {
+            dialogImg.src = img.src;
+            dialog.classList.add('open');
         }
-    },
+    });
 
-    showDialog(image) {
-        const dialogImg = this.dialogOverlay.querySelector('.dialog-image');
-        dialogImg.src = image.src;
-        this.dialogOverlay.classList.add("open");
-        document.body.style.overflow = 'hidden';
-    },
+    // Close dialog
+    closeBtn.addEventListener('click', () => {
+        dialog.classList.remove('open');
+    });
 
-    closeDialog() {
-        this.dialogOverlay.classList.remove("open");
-        document.body.style.overflow = '';
-    },
+    // Go back button
+    goBackBtn.addEventListener('click', () => {
+        document.querySelector('[data-target="collection1"]').click();
+    });
 
-    setInitialAppState() {
-        const firstNavButton = this.buttons[0];
-        if (firstNavButton) {
-            const initialCollectionID = firstNavButton.dataset.target;
-            this.activateNavigationButton(firstNavButton);
-            this.displayCollection(initialCollectionID);
-            this.updateDynamicTitle(firstNavButton);
-            this.goBackButton.style.visibility = 'hidden';
-        }
-    },
-
-    updateDynamicTitle(button) {
-        const label = button.parentElement.querySelector('.label')?.textContent || "";
-        this.dynamicTitle.textContent = label ? `${label}'s collection` : "Gallery";
-    },
-
-    attachEventListeners() {
-        this.menu.addEventListener(
-            "click",
-            this.handleNavigationClick.bind(this)
-        );
-        
-        this.imageGalleryContainer.addEventListener(
-            "click",
-            this.handleImageItemClick.bind(this)
-        );
-        
-        this.dialogOverlay.querySelector('.close-btn').addEventListener(
-            "click",
-            this.closeDialog.bind(this)
-        );
-        
-        this.goBackButton.addEventListener(
-            "click",
-            () => {
-                this.buttons[0].click();
-                this.setInitialAppState();
-            }
-        );
-    },
-
-    handleNavigationClick(event) {
-        const clickedNavButton = event.target.closest(".nav-button");
-        if (!clickedNavButton) return;
-
-        const targetCollectionID = clickedNavButton.dataset.target;
-        this.activateNavigationButton(clickedNavButton);
-        this.displayCollection(targetCollectionID);
-        this.updateDynamicTitle(clickedNavButton);
-    },
-
-    handleImageItemClick(event) {
-        const clickedImageItem = event.target.closest(".image-item");
-        if (!clickedImageItem) return;
-
-        const image = clickedImageItem.querySelector("img");
-        if (image) {
-            this.showDialog(image);
-        }
-    },
-
-    activateNavigationButton(button) {
-        this.buttons.forEach((btn) =>
-            btn.setAttribute("aria-selected", "false")
-        );
-        button.setAttribute("aria-selected", "true");
-    },
-
-    initialize() {
-        this.menu = document.querySelector("nav");
-        this.buttons = Array.from(document.querySelectorAll(".nav-button"));
-        this.imageGalleryContainer = document.querySelector(".image-gallery");
-        this.imageItems = Array.from(document.querySelectorAll(".image-item"));
-        this.galleryCollections = Array.from(
-            document.querySelectorAll(".image__gallery-collection")
-        );
-        this.goBackButton = document.querySelector(".button--go-back");
-        this.dynamicTitle = document.querySelector(".dynamic-title");
-        this.dialogOverlay = document.querySelector(".dialog");
-
-        this.attachEventListeners();
-        this.appendRandomImages();
-        this.setInitialAppState();
-    }
-};
-
-document.addEventListener("DOMContentLoaded", () => {
-    ImageGalleryApp.initialize();
+    // Initialize first collection
+    document.querySelector('[data-target="collection1"]').click();
 });
